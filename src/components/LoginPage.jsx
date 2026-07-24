@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, LogIn, Sparkles, Eye, EyeOff, ShieldCheck, Utensils, UserCheck } from 'lucide-react';
+import { Lock, Mail, LogIn, Sparkles, Eye, EyeOff, ShieldCheck, Utensils, AlertCircle } from 'lucide-react';
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -14,12 +14,20 @@ export default function LoginPage({ onLogin }) {
       setErrorMessage('Please enter your login ID and password.');
       return;
     }
+
+    const validLoginId = 'pranavpawar123.rest';
+    const validPassword = 'pranav123';
+
+    // Strict credential validation check
+    if (email.trim().toLowerCase() !== validLoginId || password.trim() !== validPassword) {
+      setErrorMessage('Invalid Login ID or Password. Access denied.');
+      return;
+    }
     
     setErrorMessage('');
-    const userName = email.toLowerCase().includes('pranav') ? 'Pranav Pawar' : email.split('@')[0];
     onLogin({
-      email,
-      name: userName,
+      email: validLoginId,
+      name: 'Pranav Pawar',
       role: stationRole,
       isDemo: false
     });
@@ -70,8 +78,9 @@ export default function LoginPage({ onLogin }) {
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444] p-2.5 rounded-lg text-xs font-medium">
-            {errorMessage}
+          <div className="bg-[#ef4444]/10 border border-[#ef4444]/40 text-[#ef4444] p-3 rounded-lg text-xs font-semibold flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -90,7 +99,10 @@ export default function LoginPage({ onLogin }) {
                 type="text"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
                 placeholder="Enter Login ID"
                 className="w-full bg-[#0f172a] border border-[#334155] focus:border-[#3b82f6] text-white text-sm rounded-lg pl-10 pr-4 py-2.5 outline-none transition-all placeholder:text-[#475569]"
               />
@@ -110,7 +122,10 @@ export default function LoginPage({ onLogin }) {
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
                 placeholder="••••••••"
                 className="w-full bg-[#0f172a] border border-[#334155] focus:border-[#3b82f6] text-white text-sm rounded-lg pl-10 pr-10 py-2.5 outline-none transition-all placeholder:text-[#475569]"
               />
@@ -154,7 +169,7 @@ export default function LoginPage({ onLogin }) {
 
         <div className="pt-1 text-center flex items-center justify-center space-x-1.5 text-xs text-[#64748b]">
           <ShieldCheck className="w-4 h-4 text-[#10b981]" />
-          <span>Secure Session</span>
+          <span>Strict Authentication Enforced</span>
         </div>
       </div>
     </div>
