@@ -2,6 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const RestaurantContext = createContext();
 
+// Helper to safely load from LocalStorage
+const loadStorage = (key, fallback) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+};
+
 // Initial Categories Data (16 Categories)
 const initialCategories = [
   { id: 'cat-1', name: 'Starters', description: 'Crispy & grilled appetizers', icon: '🍲', displayOrder: 1, status: 'Active', image: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=200' },
@@ -184,8 +194,8 @@ const initialOrders = [
     customerName: 'Robert Vance',
     customerPhone: '+1 (555) 234-5678',
     waiterName: 'Marco S.',
-    status: 'Preparing', // Pending, Preparing, Ready, Served, Completed, Cancelled
-    kdsStatus: 'Preparing', // Gray (New), Orange (Preparing), Blue (Ready), Green (Completed)
+    status: 'Preparing',
+    kdsStatus: 'Preparing',
     timeElapsed: '18m 40s',
     createdAt: new Date().toISOString(),
     specialInstructions: 'Extra smoked salt on ribeye',
@@ -234,7 +244,7 @@ const initialOrders = [
     landmark: 'Near Central Park Gate',
     deliveryNotes: 'Leave at front porch door',
     deliveryPartner: 'David K. (Rider #04)',
-    status: 'Out for Delivery', // Order Received, Accepted, Preparing, Packed, Out for Delivery, Delivered, Cancelled
+    status: 'Out for Delivery',
     kdsStatus: 'Ready',
     timeElapsed: '25m',
     createdAt: new Date().toISOString(),
@@ -281,15 +291,16 @@ const initialStaff = [
 ];
 
 export function RestaurantProvider({ children }) {
-  const [categories, setCategories] = useState(initialCategories);
-  const [foods, setFoods] = useState(initialFoods);
-  const [tables, setTables] = useState(initialTables);
-  const [orders, setOrders] = useState(initialOrders);
-  const [inventory, setInventory] = useState(initialInventory);
-  const [reservations, setReservations] = useState(initialReservations);
-  const [staff, setStaff] = useState(initialStaff);
-  const [activeRole, setActiveRole] = useState('Admin'); // Admin, Manager, Cashier, Waiter, Chef, Delivery Partner
-  const [themeMode, setThemeMode] = useState('dark'); // dark, light
+  // Load initial states from LocalStorage so EDITS PERSIST AFTER LOGOUT & LOGIN
+  const [categories, setCategories] = useState(() => loadStorage('cinder_categories', initialCategories));
+  const [foods, setFoods] = useState(() => loadStorage('cinder_foods', initialFoods));
+  const [tables, setTables] = useState(() => loadStorage('cinder_tables', initialTables));
+  const [orders, setOrders] = useState(() => loadStorage('cinder_orders', initialOrders));
+  const [inventory, setInventory] = useState(() => loadStorage('cinder_inventory', initialInventory));
+  const [reservations, setReservations] = useState(() => loadStorage('cinder_reservations', initialReservations));
+  const [staff, setStaff] = useState(() => loadStorage('cinder_staff', initialStaff));
+  const [activeRole, setActiveRole] = useState(() => loadStorage('cinder_role', 'Admin'));
+  const [themeMode, setThemeMode] = useState(() => loadStorage('cinder_theme', 'dark'));
   
   // Real-time Notifications Store
   const [notifications, setNotifications] = useState([
@@ -299,11 +310,23 @@ export function RestaurantProvider({ children }) {
   ]);
 
   // Audit Logs Store
-  const [auditLogs, setAuditLogs] = useState([
+  const [auditLogs, setAuditLogs] = useState(() => loadStorage('cinder_audit_logs', [
     { id: 1, user: 'Pranav Pawar', action: 'Sent Order ORD-101 to Kitchen', timestamp: '15 mins ago' },
     { id: 2, user: 'Chef Marco', action: 'Updated KDS status for ORD-102 to READY', timestamp: '22 mins ago' },
     { id: 3, user: 'Pranav Pawar', action: 'Added new food item Truffle Tagliatelle', timestamp: '1 hour ago' }
-  ]);
+  ]));
+
+  // Save changes to LocalStorage permanently
+  useEffect(() => { localStorage.setItem('cinder_categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { localStorage.setItem('cinder_foods', JSON.stringify(foods)); }, [foods]);
+  useEffect(() => { localStorage.setItem('cinder_tables', JSON.stringify(tables)); }, [tables]);
+  useEffect(() => { localStorage.setItem('cinder_orders', JSON.stringify(orders)); }, [orders]);
+  useEffect(() => { localStorage.setItem('cinder_inventory', JSON.stringify(inventory)); }, [inventory]);
+  useEffect(() => { localStorage.setItem('cinder_reservations', JSON.stringify(reservations)); }, [reservations]);
+  useEffect(() => { localStorage.setItem('cinder_staff', JSON.stringify(staff)); }, [staff]);
+  useEffect(() => { localStorage.setItem('cinder_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  useEffect(() => { localStorage.setItem('cinder_role', JSON.stringify(activeRole)); }, [activeRole]);
+  useEffect(() => { localStorage.setItem('cinder_theme', JSON.stringify(themeMode)); }, [themeMode]);
 
   // Toggle Theme
   const toggleTheme = () => {
