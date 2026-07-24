@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { RestaurantProvider } from './context/RestaurantContext';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 
-function App() {
+function AppContent() {
   const [user, setUser] = useState(null);
 
   if (!user) {
@@ -12,4 +13,10 @@ function App() {
   return <Dashboard user={user} onLogout={() => setUser(null)} />;
 }
 
-export default App;
+export default function App() {
+  return (
+    <RestaurantProvider>
+      <AppContent />
+    </RestaurantProvider>
+  );
+}

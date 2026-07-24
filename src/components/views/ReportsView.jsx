@@ -1,110 +1,100 @@
-import React from 'react';
-import {
-  BarChart3,
-  PieChart as PieChartIcon,
-  TrendingUp
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { useRestaurant } from '../../context/RestaurantContext';
+import { BarChart3, Download, Calendar, TrendingUp, Award, FileSpreadsheet, FileText, CheckCircle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
-
-// Orders-by-Hour Data for Bar Chart
-const hourlyOrdersData = [
-  { hour: '16:00', orders: 14, sales: 1250 },
-  { hour: '17:00', orders: 28, sales: 2400 },
-  { hour: '18:00', orders: 46, sales: 4100 },
-  { hour: '19:00', orders: 72, sales: 6850 },
-  { hour: '20:00', orders: 61, sales: 5900 },
-  { hour: '21:00', orders: 40, sales: 3800 },
-  { hour: '22:00', orders: 22, sales: 2100 },
-  { hour: '23:00', orders: 10, sales: 850 },
+const hourlyData = [
+  { hour: '11:00', orders: 12 },
+  { hour: '12:00', orders: 38 },
+  { hour: '13:00', orders: 54 },
+  { hour: '14:00', orders: 28 },
+  { hour: '18:00', orders: 42 },
+  { hour: '19:00', orders: 68 },
+  { hour: '20:00', orders: 85 },
+  { hour: '21:00', orders: 46 }
 ];
 
-// Revenue-by-Category Data for Donut Chart
-const revenueByCategoryData = [
-  { name: 'Grill Station', value: 11970, color: '#ff4d25' },      // Ember Red-Orange
-  { name: 'Saute Station', value: 6650, color: '#ff9800' },       // Turmeric Gold
-  { name: 'Starters & Raw Bar', value: 3990, color: '#4caf50' },  // Herb Green
-  { name: 'Pantry & Sides', value: 2660, color: '#ffb74d' },      // Amber
-  { name: 'Desserts & Spirits', value: 1330, color: '#26a69a' },  // Teal
+const categoryRevenueData = [
+  { name: 'Main Course', value: 42 },
+  { name: 'Biryani', value: 24 },
+  { name: 'Starters', value: 18 },
+  { name: 'Desserts', value: 10 },
+  { name: 'Drinks', value: 6 }
 ];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function ReportsView() {
+  const { orders, foods } = useRestaurant();
+  const [reportRange, setReportRange] = useState('Daily');
+
+  const handleExportCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8,Order ID,Type,Customer,Total,Status\n" +
+      orders.map(e => `${e.id},${e.type},${e.customerName},${e.totalAmount},${e.status}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Cinder_Restaurant_Report_${reportRange}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6 font-body">
-      {/* Top Overview KPI Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-5 shadow-md">
-          <p className="text-xs text-[#a09a8e] uppercase">TOTAL SHIFT REVENUE</p>
-          <h3 className="text-3xl font-bold text-white mt-1">$26,600.00</h3>
-          <p className="text-xs text-[#4caf50] mt-1 flex items-center">
-            <TrendingUp className="w-3.5 h-3.5 mr-1" /> +14.2% vs target
-          </p>
+    <div className="space-y-6 font-sans text-xs">
+      {/* Header */}
+      <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-lg bg-[#3b82f6]/10 border border-[#3b82f6]/30 flex items-center justify-center text-[#3b82f6]">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-tight">Executive Reports & Analytics Suite</h2>
+            <p className="text-[#94a3b8]">Daily, weekly, monthly sales reports, kitchen performance & data exports</p>
+          </div>
         </div>
 
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-5 shadow-md">
-          <p className="text-xs text-[#a09a8e] uppercase">PEAK ORDER HOUR</p>
-          <h3 className="text-3xl font-bold text-white mt-1">19:00</h3>
-          <p className="text-xs text-[#ff9800] mt-1">72 orders / hr rush</p>
-        </div>
+        {/* Range Selector & Export */}
+        <div className="flex items-center space-x-2">
+          <div className="flex bg-[#0f172a] p-1 rounded-lg border border-[#334155]">
+            {['Daily', 'Weekly', 'Monthly'].map((r) => (
+              <button
+                key={r}
+                onClick={() => setReportRange(r)}
+                className={`px-3 py-1 rounded font-bold transition-all cursor-pointer ${
+                  reportRange === r ? 'bg-[#3b82f6] text-white' : 'text-[#94a3b8] hover:text-white'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
 
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-5 shadow-md">
-          <p className="text-xs text-[#a09a8e] uppercase">TOP YIELD CATEGORY</p>
-          <h3 className="text-2xl font-bold text-[#ff4d25] mt-1 truncate">GRILL (45%)</h3>
-          <p className="text-xs text-[#a09a8e] mt-1">$11,970 gross revenue</p>
-        </div>
-
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-5 shadow-md">
-          <p className="text-xs text-[#a09a8e] uppercase">AVG SPEND / GUEST</p>
-          <h3 className="text-3xl font-bold text-white mt-1">$138.54</h3>
-          <p className="text-xs text-[#4caf50] mt-1">+8.2% cover average</p>
+          <button
+            onClick={handleExportCSV}
+            className="bg-[#10b981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg font-bold flex items-center space-x-2 cursor-pointer shadow-md"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
         </div>
       </div>
 
-      {/* CHARTS GRID: BAR CHART & DONUT CHART */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-mono">
-        
-        {/* CHART 1: ORDERS-BY-HOUR BAR CHART */}
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-[#322e2a] pb-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5 text-[#ff4d25]" />
-              <div>
-                <h3 className="font-header text-2xl text-white tracking-wide">ORDERS BY HOUR</h3>
-                <p className="text-xs text-[#a09a8e]">DINNER SERVICE PACING (16:00 - 23:00)</p>
-              </div>
-            </div>
-            <span className="text-xs text-[#ff9800] bg-[#121110] px-2.5 py-1 rounded border border-[#322e2a]">
-              293 TOTAL
-            </span>
-          </div>
-
-          <div className="h-72 w-full pt-2">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hourly Orders Bar Chart */}
+        <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-5 space-y-4 shadow-xl">
+          <h3 className="text-base font-bold text-white border-b border-[#334155] pb-3">
+            ORDERS BY HOUR DISTRIBUTION ({reportRange.toUpperCase()})
+          </h3>
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hourlyOrdersData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#322e2a" vertical={false} />
+              <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="hour" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'Inter' }} />
                 <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'Inter' }} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1e293b',
-                    borderColor: '#334155',
-                    borderRadius: '8px',
-                    fontFamily: 'Inter',
-                    color: '#f8fafc'
-                  }}
-                  formatter={(value) => [`${value} Orders`, 'Volume']}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
                 />
                 <Bar dataKey="orders" fill="#3b82f6" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -112,92 +102,34 @@ export default function ReportsView() {
           </div>
         </div>
 
-        {/* CHART 2: REVENUE-BY-CATEGORY DONUT CHART */}
-        <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-6 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between border-b border-[#322e2a] pb-4">
-            <div className="flex items-center space-x-2">
-              <PieChartIcon className="w-5 h-5 text-[#ff9800]" />
-              <div>
-                <h3 className="font-header text-2xl text-white tracking-wide">REVENUE BY CATEGORY</h3>
-                <p className="text-xs text-[#a09a8e]">SALES BREAKDOWN BY KITCHEN STATION</p>
-              </div>
-            </div>
-            <span className="text-xs text-[#4caf50] bg-[#121110] px-2.5 py-1 rounded border border-[#322e2a]">
-              $26.6K GROSS
-            </span>
-          </div>
-
-          <div className="h-72 w-full pt-2 flex items-center justify-center">
+        {/* Category Share Donut Chart */}
+        <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-5 space-y-4 shadow-xl">
+          <h3 className="text-base font-bold text-white border-b border-[#334155] pb-3">
+            REVENUE SHARE BY CATEGORY (%)
+          </h3>
+          <div className="h-64 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={revenueByCategoryData}
+                  data={categoryRevenueData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={95}
-                  paddingAngle={4}
+                  innerRadius={60}
+                  outerRadius={85}
+                  paddingAngle={5}
                   dataKey="value"
                 >
-                  {revenueByCategoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#1a1816" strokeWidth={2} />
+                  {categoryRevenueData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1e293b',
-                    borderColor: '#334155',
-                    borderRadius: '8px',
-                    fontFamily: 'Inter',
-                    color: '#f8fafc'
-                  }}
-                  formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+                  formatter={(val) => [`${val}%`, 'Share']}
                 />
-                <Legend
-                  layout="vertical"
-                  verticalAlign="middle"
-                  align="right"
-                  wrapperStyle={{ fontFamily: 'Inter', fontSize: '11px', color: '#94a3b8' }}
-                />
-
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
-
-      </div>
-
-      {/* Bottom Category Breakdown Details Table */}
-      <div className="bg-[#1a1816] border border-[#322e2a] rounded-xl p-5 shadow-xl font-mono text-xs">
-        <h4 className="font-header text-xl text-white mb-3">STATION REVENUE DETAILS</h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[#322e2a] text-[#6e675e] uppercase">
-                <th className="py-2.5 px-3">STATION / CATEGORY</th>
-                <th className="py-2.5 px-3">GROSS REVENUE</th>
-                <th className="py-2.5 px-3">SHARE %</th>
-                <th className="py-2.5 px-3 text-right">STATUS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#322e2a]/50 text-[#e6e4df]">
-              {revenueByCategoryData.map((cat, idx) => (
-                <tr key={idx} className="hover:bg-[#221f1c]">
-                  <td className="py-3 px-3 flex items-center space-x-2">
-                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="font-bold text-white">{cat.name}</span>
-                  </td>
-                  <td className="py-3 px-3 font-bold text-[#ff9800]">${cat.value.toLocaleString()}.00</td>
-                  <td className="py-3 px-3">{((cat.value / 26600) * 100).toFixed(1)}%</td>
-                  <td className="py-3 px-3 text-right">
-                    <span className="badge-herb px-2 py-0.5 rounded text-[10px] font-bold">
-                      ON TARGET
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
