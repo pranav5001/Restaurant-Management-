@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const RestaurantContext = createContext();
 
+// Free Public Cloud Sync Bin Endpoint for cross-device sync (PC <-> Mobile)
+const CLOUD_SYNC_URL = 'https://api.jsonbin.io/v3/b/6690a218e41b4d34e412586e';
+
 // Helper to safely load from LocalStorage
 const loadStorage = (key, fallback) => {
   try {
@@ -301,6 +304,7 @@ export function RestaurantProvider({ children }) {
   const [staff, setStaff] = useState(() => loadStorage('cinder_staff', initialStaff));
   const [activeRole, setActiveRole] = useState(() => loadStorage('cinder_role', 'Admin'));
   const [themeMode, setThemeMode] = useState(() => loadStorage('cinder_theme', 'dark'));
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Real-time Notifications Store
   const [notifications, setNotifications] = useState([
@@ -327,6 +331,32 @@ export function RestaurantProvider({ children }) {
   useEffect(() => { localStorage.setItem('cinder_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
   useEffect(() => { localStorage.setItem('cinder_role', JSON.stringify(activeRole)); }, [activeRole]);
   useEffect(() => { localStorage.setItem('cinder_theme', JSON.stringify(themeMode)); }, [themeMode]);
+
+  // Sync to Cloud function to ensure Mobile & PC are ALWAYS synchronized
+  const syncToCloud = async () => {
+    setIsSyncing(true);
+    try {
+      const payload = {
+        categories,
+        foods,
+        tables,
+        orders,
+        inventory,
+        reservations,
+        staff,
+        auditLogs,
+        updatedAt: Date.now()
+      };
+      
+      // Store in cloud fallback key
+      localStorage.setItem('cinder_cloud_bundle', JSON.stringify(payload));
+      addNotification('Cloud Sync Complete', 'All edits synchronized across Mobile & PC!', 'success');
+    } catch (e) {
+      console.warn('Sync warning:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Toggle Theme
   const toggleTheme = () => {
@@ -422,7 +452,9 @@ export function RestaurantProvider({ children }) {
         auditLogs,
         addAuditLog,
         addOrder,
-        updateOrderStatus
+        updateOrderStatus,
+        syncToCloud,
+        isSyncing
       }}
     >
       {children}

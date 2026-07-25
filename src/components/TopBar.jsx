@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRestaurant } from '../context/RestaurantContext';
-import { Search, Bell, Clock, Menu, Sun, Moon, QrCode, Shield, Utensils } from 'lucide-react';
+import { Search, Bell, Clock, Menu, Sun, Moon, QrCode, Shield, Utensils, LogOut, RefreshCw } from 'lucide-react';
 
 const pageTitles = {
   dashboard: 'Executive Dashboard',
@@ -21,8 +21,8 @@ const pageTitles = {
   settings: 'Restaurant Settings'
 };
 
-export default function TopBar({ activePage, searchQuery, setSearchQuery, setSidebarOpen, setActivePage }) {
-  const { activeRole, setActiveRole, themeMode, toggleTheme, notifications } = useRestaurant();
+export default function TopBar({ activePage, searchQuery, setSearchQuery, setSidebarOpen, setActivePage, onLogout }) {
+  const { activeRole, setActiveRole, themeMode, toggleTheme, notifications, syncToCloud, isSyncing } = useRestaurant();
   const [currentTime, setCurrentTime] = useState('');
   const [showNotifs, setShowNotifs] = useState(false);
 
@@ -37,44 +37,56 @@ export default function TopBar({ activePage, searchQuery, setSearchQuery, setSid
   const roles = ['Admin', 'Manager', 'Cashier', 'Waiter', 'Chef', 'Delivery Partner'];
 
   return (
-    <header className="bg-[#1e293b] border-b border-[#334155] px-4 sm:px-6 py-3 flex items-center justify-between gap-3 sticky top-0 z-20 shadow-md font-sans text-xs">
+    <header className="bg-[#1e293b] border-b border-[#334155] px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2.5 sticky top-0 z-20 shadow-md font-sans text-xs">
       {/* Left Title */}
-      <div className="flex items-center space-x-3 min-w-0">
+      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
         {setSidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden text-[#f8fafc] hover:text-[#3b82f6] p-1.5 rounded-lg bg-[#0f172a] border border-[#334155] cursor-pointer"
+            title="Open Menu Drawer"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
 
         <div className="min-w-0">
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-none truncate">
+          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none truncate">
             {pageTitles[activePage] || 'Dashboard'}
           </h2>
-          <p className="text-[11px] text-[#94a3b8] mt-0.5 hidden sm:block">
+          <p className="text-[10px] text-[#94a3b8] mt-0.5 hidden sm:block">
             Cinder Restaurant Management OS
           </p>
         </div>
       </div>
 
       {/* Center Search Input */}
-      <div className="flex-1 max-w-xs sm:max-w-md relative">
-        <Search className="w-4 h-4 absolute left-3 top-2 text-[#64748b]" />
+      <div className="flex-1 max-w-[140px] sm:max-w-md relative">
+        <Search className="w-4 h-4 absolute left-2.5 top-2 text-[#64748b]" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search orders, dishes, tables, staff..."
-          className="w-full bg-[#0f172a] border border-[#334155] focus:border-[#3b82f6] text-white text-xs rounded-lg pl-9 pr-3 py-1.5 outline-none transition-all placeholder:text-[#475569]"
+          placeholder="Search..."
+          className="w-full bg-[#0f172a] border border-[#334155] focus:border-[#3b82f6] text-white text-xs rounded-lg pl-8 pr-2 py-1.5 outline-none transition-all placeholder:text-[#475569]"
         />
       </div>
 
-      {/* Right Controls (Role Switcher, QR Code, Dark/Light Mode, Notifications) */}
-      <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+      {/* Right Controls (Role Switcher, Cloud Sync, QR Code, Dark/Light Mode, Notifications, Sign Out) */}
+      <div className="flex items-center space-x-1.5 sm:space-x-2.5 flex-shrink-0">
+        {/* Sync Button */}
+        <button
+          onClick={syncToCloud}
+          className={`p-1.5 rounded-lg bg-[#0f172a] hover:bg-[#334155] border border-[#334155] text-[#3b82f6] cursor-pointer transition-all ${
+            isSyncing ? 'animate-spin' : ''
+          }`}
+          title="Sync Data Across Devices"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+
         {/* Role Switcher */}
-        <div className="hidden md:flex items-center space-x-1.5 bg-[#0f172a] px-2.5 py-1 rounded-lg border border-[#334155]">
+        <div className="hidden md:flex items-center space-x-1 bg-[#0f172a] px-2 py-1 rounded-lg border border-[#334155]">
           <Shield className="w-3.5 h-3.5 text-[#3b82f6]" />
           <select
             value={activeRole}
@@ -93,11 +105,11 @@ export default function TopBar({ activePage, searchQuery, setSearchQuery, setSid
         {setActivePage && (
           <button
             onClick={() => setActivePage('qr-menu')}
-            className="hidden sm:flex items-center space-x-1 bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 text-[#3b82f6] px-2.5 py-1.5 rounded-lg border border-[#3b82f6]/30 font-bold cursor-pointer transition-colors"
+            className="hidden sm:flex items-center space-x-1 bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 text-[#3b82f6] px-2 py-1.5 rounded-lg border border-[#3b82f6]/30 font-bold cursor-pointer transition-colors"
             title="Customer Digital QR Menu"
           >
             <QrCode className="w-4 h-4" />
-            <span className="hidden lg:inline">QR Menu</span>
+            <span className="hidden lg:inline">QR</span>
           </button>
         )}
 
@@ -111,7 +123,7 @@ export default function TopBar({ activePage, searchQuery, setSearchQuery, setSid
         </button>
 
         {/* Live Clock */}
-        <div className="hidden xl:flex items-center space-x-1.5 bg-[#0f172a] px-3 py-1.5 rounded-lg border border-[#334155]">
+        <div className="hidden xl:flex items-center space-x-1 bg-[#0f172a] px-2.5 py-1.5 rounded-lg border border-[#334155]">
           <Clock className="w-3.5 h-3.5 text-[#3b82f6]" />
           <span className="font-mono text-xs text-[#f8fafc]">{currentTime || '19:42:05'}</span>
         </div>
@@ -152,6 +164,18 @@ export default function TopBar({ activePage, searchQuery, setSearchQuery, setSid
             </div>
           )}
         </div>
+
+        {/* PROMINENT HIGH-VISIBILITY SIGN OUT BUTTON FOR MOBILE & DESKTOP */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="bg-[#ef4444] hover:bg-[#dc2626] text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 cursor-pointer transition-all shadow-md active:scale-95"
+            title="Sign Out of Restaurant Terminal"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="font-extrabold tracking-wide">Sign Out</span>
+          </button>
+        )}
       </div>
     </header>
   );
