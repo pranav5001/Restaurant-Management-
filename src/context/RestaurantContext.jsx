@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 const RestaurantContext = createContext();
 
-// Free Public Cloud Sync Bin Endpoint for cross-device sync (PC <-> Mobile)
-const CLOUD_SYNC_URL = 'https://api.jsonbin.io/v3/b/6690a218e41b4d34e412586e';
+// Real Online Cloud Sync Endpoint for Instant Cross-Device Sync (PC <-> Mobile)
+const CLOUD_API_URL = 'https://kvdb.io/cinder_app_sync_v2_restaurant_db';
 
 // Helper to safely load from LocalStorage
 const loadStorage = (key, fallback) => {
@@ -305,6 +305,7 @@ export function RestaurantProvider({ children }) {
   const [activeRole, setActiveRole] = useState(() => loadStorage('cinder_role', 'Admin'));
   const [themeMode, setThemeMode] = useState(() => loadStorage('cinder_theme', 'dark'));
   const [isSyncing, setIsSyncing] = useState(false);
+  const isMounted = useRef(false);
   
   // Real-time Notifications Store
   const [notifications, setNotifications] = useState([
@@ -332,11 +333,39 @@ export function RestaurantProvider({ children }) {
   useEffect(() => { localStorage.setItem('cinder_role', JSON.stringify(activeRole)); }, [activeRole]);
   useEffect(() => { localStorage.setItem('cinder_theme', JSON.stringify(themeMode)); }, [themeMode]);
 
-  // Sync to Cloud function to ensure Mobile & PC are ALWAYS synchronized
-  const syncToCloud = async () => {
+  // Fetch Latest Cloud Data (Cross-Device PC <-> Mobile Sync)
+  const fetchFromCloud = async () => {
+    try {
+      const res = await fetch(CLOUD_API_URL, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const cloudData = await res.json();
+        if (cloudData && cloudData.updatedAt) {
+          const localTime = Number(localStorage.getItem('cinder_last_updated') || 0);
+          if (cloudData.updatedAt > localTime) {
+            if (cloudData.categories) { setCategories(cloudData.categories); localStorage.setItem('cinder_categories', JSON.stringify(cloudData.categories)); }
+            if (cloudData.foods) { setFoods(cloudData.foods); localStorage.setItem('cinder_foods', JSON.stringify(cloudData.foods)); }
+            if (cloudData.tables) { setTables(cloudData.tables); localStorage.setItem('cinder_tables', JSON.stringify(cloudData.tables)); }
+            if (cloudData.orders) { setOrders(cloudData.orders); localStorage.setItem('cinder_orders', JSON.stringify(cloudData.orders)); }
+            if (cloudData.inventory) { setInventory(cloudData.inventory); localStorage.setItem('cinder_inventory', JSON.stringify(cloudData.inventory)); }
+            if (cloudData.reservations) { setReservations(cloudData.reservations); localStorage.setItem('cinder_reservations', JSON.stringify(cloudData.reservations)); }
+            if (cloudData.staff) { setStaff(cloudData.staff); localStorage.setItem('cinder_staff', JSON.stringify(cloudData.staff)); }
+            if (cloudData.auditLogs) { setAuditLogs(cloudData.auditLogs); localStorage.setItem('cinder_audit_logs', JSON.stringify(cloudData.auditLogs)); }
+            localStorage.setItem('cinder_last_updated', cloudData.updatedAt.toString());
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud fetch warning:', e);
+    }
+  };
+
+  // Push Local State to Cloud so Mobile Phone IMMEDIATELY gets Laptop edits
+  const pushToCloud = async (currentPayload) => {
     setIsSyncing(true);
     try {
-      const payload = {
+      const now = Date.now();
+      localStorage.setItem('cinder_last_updated', now.toString());
+      const payload = currentPayload || {
         categories,
         foods,
         tables,
@@ -345,17 +374,47 @@ export function RestaurantProvider({ children }) {
         reservations,
         staff,
         auditLogs,
-        updatedAt: Date.now()
+        updatedAt: now
       };
       
-      // Store in cloud fallback key
-      localStorage.setItem('cinder_cloud_bundle', JSON.stringify(payload));
+      await fetch(CLOUD_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
       addNotification('Cloud Sync Complete', 'All edits synchronized across Mobile & PC!', 'success');
     } catch (e) {
-      console.warn('Sync warning:', e);
+      console.warn('Push cloud warning:', e);
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  // Auto-Fetch from Cloud when device opens or logs in, and poll every 6s
+  useEffect(() => {
+    fetchFromCloud();
+    const interval = setInterval(() => {
+      fetchFromCloud();
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-push state changes to Cloud Database after initial mount
+  useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
+    const timer = setTimeout(() => {
+      pushToCloud();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [categories, foods, tables, orders, inventory, reservations, staff]);
+
+  // Sync to Cloud function to manually trigger sync
+  const syncToCloud = async () => {
+    await fetchFromCloud();
+    await pushToCloud();
   };
 
   // Toggle Theme
